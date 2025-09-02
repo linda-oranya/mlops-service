@@ -2,8 +2,9 @@ from __future__ import annotations
 import os, time, joblib, hashlib, time
 from pathlib import Path
 from typing import List
+import numpy as np
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException 
 from fastapi.responses import JSONResponse, RedirectResponse
 from api.schemas import PredictRequest, PredictResponse
 from api.utils import setup_json_logger, RollingStats
@@ -56,23 +57,36 @@ def predict(payload: PredictRequest):
     try:
         X = np.asarray(payload.features, dtype=float)
         if X.ndim == 1:
-            X = X.reshape(1, -1)
-
+            X = X.reshape(1, -1)  # accept 1-D as one row
         expected = int(getattr(model, "n_features_in_", X.shape[1]))
         if X.shape[1] != expected:
             raise HTTPException(
                 status_code=400,
                 detail=f"Expected {expected} features per row, got {X.shape[1]}. "
-                       f"Send like: {{\"features\": [[5.1,3.5,1.4,0.2]]}}"
+                       f'Example: {{"features": [[5.1,3.5,1.4,0.2]]}}'
             )
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.exception({"event": "input_error", "error": str(e)})
         raise HTTPException(status_code=400, detail=f"Invalid input: {e}")
 
-    preds = model.predict(X).tolist()
-    stats.update(X.tolist())
-    logger.info({"event": "predict", "n": len(X), "class_counts": {str(k): v for k, v in stats.last_class_counts(preds).items()}})
-    return {"predictions": preds}
+    # Predict safely
+    try:
+        preds = model.predict(X).tolist()
+    except Exception as e:
+        logger.exception({"event": "predict_error", "error": str(e)})
+        raise HTTPException(status_code=400, detail=f"Prediction failed: {e}")
 
+    stats.update(X.tolist())
+    logger.info({
+        "ts": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+        "event": "predict",
+        "n": int(X.shape[0]),
+        "feature_means": np.round(X.mean(axis=0), 4).tolist(),
+        "class_counts": {str(k): v for k, v in stats.last_class_counts(preds).items()},
+    })
+    return {"predictions": preds}
 def _file_hash(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:

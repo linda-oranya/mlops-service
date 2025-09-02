@@ -73,3 +73,18 @@ Notes
 If train.py cannot be modified, the Prefect flow will still log your model artifact; you can add metrics later.
 
 Set MLFLOW_TRACKING_URI to a remote server if you have one; the default mlruns/ folder is fine locally.
+
+
+## 4) Design decisions & tradeoffs (copy into README if needed)
+
+Orchestration – Prefect (vs Airflow): Simpler for a single job; add Airflow when you need backfills, sensors, RBAC, many DAGs.
+
+Tracking – MLflow: Local, OSS, easy artifact/run comparison. W&B/Neptune = great hosted alternatives.
+
+Serving – FastAPI + Uvicorn: Type-safe, auto-docs, fast. Flask is simpler but less structured.
+
+Packaging – Docker: Reproducible env; cost is image size/build time.
+
+Monitoring – JSON logs + Evidently: Enough for the assignment. In prod: ship logs/metrics/traces via OTel; alert on latency/5xx and sustained drift; retrain only when performance also drops.
+
+Terraform/IaC: Omitted for speed. Would add when deploying to cloud (buckets, MLflow DB, service, IAM, logging).

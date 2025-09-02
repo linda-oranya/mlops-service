@@ -1,17 +1,27 @@
 import logging, json
 from collections import deque, Counter
 from pythonjsonlogger import jsonlogger
+from pathlib import Path
+
 
 
 def setup_json_logger():
     logger = logging.getLogger("ml-service")
     logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler()
-    formatter = jsonlogger.JsonFormatter()
-    handler.setFormatter(formatter)
+
+    Path("artifacts").mkdir(parents=True, exist_ok=True)
+
+    sh = logging.StreamHandler()
+    sh.setFormatter(jsonlogger.JsonFormatter())
+
+    fh = logging.FileHandler("artifacts/requests.jsonl")
+    fh.setFormatter(jsonlogger.JsonFormatter())
+
     if not logger.handlers:
-        logger.addHandler(handler)
+        logger.addHandler(sh)
+        logger.addHandler(fh)
     return logger
+
 
 
 class RollingStats:
