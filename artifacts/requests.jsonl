@@ -1,1 +1,2 @@
 {"message": "", "event": "model_loaded", "path": "artifacts/model.pkl"}
+{"message": "", "event": "model_loaded", "path": "artifacts/model.pkl", "taskName": "Task-1"}

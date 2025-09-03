@@ -71,7 +71,6 @@ def predict(payload: PredictRequest):
         logger.exception({"event": "input_error", "error": str(e)})
         raise HTTPException(status_code=400, detail=f"Invalid input: {e}")
 
-    # Predict safely
     try:
         preds = model.predict(X).tolist()
     except Exception as e:
