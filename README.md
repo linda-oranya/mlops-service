@@ -21,7 +21,8 @@ mlflow ui --backend-store-uri mlruns
 # local
 uvicorn api.app:app --host 0.0.0.0 --port 8000
 # Docker
-make docker-build
+docker build -t ml-service:latest -f ./docker/DOCKERFILE .
+
 docker run --rm -p 8000:8000 -v $(pwd)/artifacts:/app/artifacts ml-service:latest
 
 #### Test API
